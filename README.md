@@ -6,31 +6,6 @@
 > **Langage** : Python 3.10+
 > **Domaine** : essais vibratoires — personnalisation d'environnement mécanique
 
-> **Nouveautés V3.6** (programme contrôlé étape par étape contre l'article de B. Colin [2]) :
-> - **Identification Kappa4 en deux étapes** : la forme (k, h) est déduite des
->   seuls rapports τ3, τ4, puis la position ξ et l'échelle α de L1, L2 en forme
->   close ([2] éq. 28-34). Le domaine de h est contrôlé : une racine h < −1 est
->   rejetée, et un point (τ3, τ4) hors domaine est ramené à la **loi du bord**,
->   au point de la courbe h = −1 le plus proche en distance euclidienne
->   ([2] éq. 28) — cf. §4.2.
-> - **Découpage en blocs exact** : un bloc compte toujours `round(T_b·fs)`
->   échantillons ; le coefficient d'extrapolation M est calculé avec cette
->   durée de bloc effective — cf. §4.11.
-> - **Réponse 1-DDL amorcée** : plus d'oscillation libre parasite dans le
->   premier bloc aux basses fréquences — cf. §4.3.
-> - **Contrôle de stationnarité** avant calcul, avec verdict et recommandation
->   en clair ; `AUTO_SELECT_K` impose une seule classe si le signal est jugé
->   stationnaire — cf. §4.12.
-> - **Synthèse des classes par produit des répartitions** Π F_j^{M_j}
->   ([1] §C.10, [2] éq. 37), à la durée du signal comme en projection ; une
->   classe sans loi exploitable, donc absente de la synthèse, est **signalée**
->   — cf. §4.13.
-> - **Contrat IID commenté dans les rapports HTML** : test en cause, bandes de
->   fréquences touchées, part attribuable au hasard, cause probable,
->   conséquence et action — cf. §4.14.
-> - Rapports HTML : une légende par graphe, boutons d'échelle par graphe,
->   guide de lecture des courbes repliable.
-> - **24 tests unitaires** visuels, un par fonction d'intérêt — cf. §5.9.
 
 ---
 
@@ -44,8 +19,7 @@
 6. [Paramètres utilisateur — description complète](#6-paramètres-utilisateur--description-complète)
 7. [Fichiers de sortie](#7-fichiers-de-sortie)
 8. [Architecture du code (sections internes)](#8-architecture-du-code-sections-internes)
-9. [Pièges connus et précautions](#9-pièges-connus-et-précautions)
-10. [Suggestions d'amélioration](#10-suggestions-damélioration)
+
 
 ---
 
@@ -683,43 +657,3 @@ En tête des deux rapports, trois blocs repliables : **paramètres du calcul**, 
 
 ---
 
-## 9. Pièges connus et précautions
-
-**Sensibilité de la projection.** Le SRE projeté à 10 000 h dépend fortement du paramètre de forme k quand il est proche de zéro : son signe sépare une queue bornée d'une queue lourde. Sur un signal de 600 s, changer seulement le découpage (468 blocs au lieu de 363) a déplacé le SRE projeté de plus de 20 % à 7 % des fréquences, alors que le SRE à la durée du signal bougeait de moins de 4 %. Un spectre projeté en dents de scie est le signe de cette sensibilité, pas d'une propriété du signal. Recouper avec la loi de Rayleigh généralisée et avec le SRX analytique.
-
-**Contrat IID — lire le commentaire, pas seulement le verdict.**
-- Le seuil GO (5 % de fréquences en échec) est du même ordre que le taux de fausse alarme des deux tests : 4 à 6 % au-delà de 300 blocs, environ 9 % pour 90 blocs, 22 % pour 40 blocs. Un signal parfaitement indépendant peut sortir en WARNING. La rubrique « Part attribuable au hasard » fait la part des choses.
-- Quand K > 1, le verdict porte sur la série de tous les blocs, classes confondues : il est normal qu'il échoue sur un signal à régimes. C'est la rubrique « Par classe » qui renseigne sur la validité de l'ajustement.
-
-**T_b et basses fréquences.** Sous f₀ = 3·Q/(π·T_b), la réponse d'un bloc déborde sur le suivant. Avec Q = 10 et T_b = 1,28 s, cela concerne f₀ < 7,5 Hz. Remède : T_b ≥ 3·Q/(π·F0_MIN), au prix de moins de blocs.
-
-**Classes exclues.** La ligne « ⚠ Classes exclues » signale un spectre sous-estimé ; la classe écartée peut être le régime le plus sévère. Le remède est du côté des données : signal plus long ou moins de classes. `MIN_SAMPLES_PER_CLUSTER` ≥ `MIN_POINTS_KAPPA4` évite le cas pour les classes trop petites.
-
-**`N_CLUSTERS` > 1 sans feature.** Avec `AUTO_SELECT_K = False` et toutes les `FEATURE_FLAGS` à False, le calcul retombe sur une seule classe sans avertissement particulier. Activer au moins `rms`.
-
-**Option `gev_domaines`.** Elle ré-ajuste une GEV (h = 0) sur les maxima, alors que [2] désigne le domaine d'attraction par le k* de la Kappa4 ajustée. Les deux k peuvent différer, jusqu'à changer de signe ; sur des lois d'essai, l'écart sur le SRE projeté allait de −55 % à plusieurs centaines de %. À utiliser comme recoupement, pas comme référence.
-
-**Unicité de la Kappa4.** La condition h ≥ −1 ne suffit pas partout : pour τ3 > 0,28 environ, près de la courbe h = −1, deux couples (k, h) reproduisent exactement le même (τ3, τ4). Le solveur a rendu la racine de plus grand h dans tous les essais, mais rien ne le garantit. Ne concerne que des maxima très asymétriques.
-
-**SDF projeté « loi sur D_bloc ».** Les moments de la loi ajustée sont intégrés sur une grille tronquée : pour une queue lourde (k < 0), moyenne et variance sont sous-estimées. La projection par moments empiriques (`SDF_Proj_TCL_empirique`) n'a pas ce biais.
-
-**F0_MAX et fréquence d'échantillonnage.** Le filtre de Smallwood suppose l'excitation linéaire entre deux échantillons ; l'amplitude de la réponse est réduite d'environ (π·f/fs)²/3, soit 3 % à fs/10 et 1 % à fs/18.
-
-**Fin de signal.** Les derniers échantillons qui ne remplissent pas un bloc sont ignorés dans la branche MBD (le SRC et la branche analytique portent sur tout le signal).
-
-**Nom de colonne.** La colonne `SRE_Kappa4_*` garde ce nom quand la loi choisie est la Rayleigh généralisée.
-
-**CSV.** Un `CSV_SKIP_ROWS` trop petit ne provoque pas d'erreur : les lignes d'en-tête illisibles sont simplement retirées. Vérifier dans le journal le nombre de points et la durée lus.
-
----
-
-## 10. Suggestions d'amélioration
-
-1. **Unicité de la Kappa4** : ajouter au contrôle de domaine la contrainte de Hosking (1994) sur le couple (k, h), et tester explicitement k > −1 et h·k > −1 ([2] Figure 11).
-2. **Projection GEV** : projeter avec le k* de la Kappa4 ajustée, sans ré-ajustement à h = 0, conformément à [2] §4.1.
-3. **Verdict IID** : l'évaluer classe par classe quand K > 1, et caler le seuil GO sur le taux de hasard calculé pour le nombre de blocs.
-4. **Moments de la loi pour le dommage** : moyenne = L1 par construction ; variance en forme close par g₁(2k, h), avec refus quand elle n'existe pas (k ≤ −0,5).
-5. **Incertitude de la projection** : intervalle de confiance par rééchantillonnage des blocs, pour afficher la dispersion du SRE projeté.
-6. **Classification** : analyse en composantes principales des features avant K-Means ([2] §4.2).
-7. **Critères de la norme** : avertir quand M < 100 (valeurs extrêmes) ou M < 50 (théorème central limite).
-8. **Classes exclues** : borner inférieurement le SRE à la durée du signal par le plus grand maximum mesuré de la classe écartée.

@@ -13,31 +13,6 @@
 > 1-DDL = single degree of freedom (SDOF) · TCL = central limit theorem ·
 > IID = independent and identically distributed.
 
-> **What is new in V3.6** (program checked step by step against B. Colin's paper [2]):
-> - **Two-step Kappa4 identification**: the shape (k, h) is derived from the
->   ratios τ3, τ4 alone, then location ξ and scale α from L1, L2 in closed form
->   ([2] eq. 28-34). The h domain is checked: a root h < −1 is rejected, and a
->   (τ3, τ4) point outside the domain is brought back to the **boundary law**,
->   at the point of the h = −1 curve nearest in Euclidean distance
->   ([2] eq. 28) — see §4.2.
-> - **Exact block splitting**: a block always holds `round(T_b·fs)` samples;
->   the extrapolation coefficient M is computed with this effective block
->   duration — see §4.11.
-> - **Primed SDOF response**: no spurious free oscillation in the first block
->   at low frequencies — see §4.3.
-> - **Stationarity check** before the computation, with a verdict and a
->   plain-language recommendation; `AUTO_SELECT_K` forces a single class when
->   the signal is judged stationary — see §4.12.
-> - **Class synthesis by product of the distribution functions** Π F_j^{M_j}
->   ([1] §C.10, [2] eq. 37), at signal duration as well as in projection; a
->   class with no usable law, hence absent from the synthesis, is **flagged**
->   — see §4.13.
-> - **IID contract explained in the HTML reports**: failing test, frequency
->   bands affected, share attributable to chance, probable cause, consequence
->   and action — see §4.14.
-> - HTML reports: one legend per chart, scale buttons per chart, collapsible
->   curve reading guide.
-> - **24 visual unit tests**, one per function of interest — see §5.9.
 
 ---
 
@@ -51,8 +26,7 @@
 6. [User parameters — full description](#6-user-parameters--full-description)
 7. [Output files](#7-output-files)
 8. [Code architecture (internal sections)](#8-code-architecture-internal-sections)
-9. [Known pitfalls and precautions](#9-known-pitfalls-and-precautions)
-10. [Improvement suggestions](#10-improvement-suggestions)
+
 
 ---
 
